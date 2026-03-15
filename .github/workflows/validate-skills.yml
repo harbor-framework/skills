@@ -1,0 +1,34 @@
+name: Validate Skills
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'skills/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install skills-ref CLI
+        run: npm install -g @anthropic-ai/skills-ref
+
+      - name: Validate harbor-task-creator
+        run: skills-ref validate ./skills/harbor-task-creator
+
+      - name: Validate harbor-adapter-creator
+        run: skills-ref validate ./skills/harbor-adapter-creator
+
+      - name: Validate harbor-cli
+        run: skills-ref validate ./skills/harbor-cli

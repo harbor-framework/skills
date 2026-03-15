@@ -1,0 +1,15 @@
+{
+  "name": "harbor-skills",
+  "owner": "harbor-framework",
+  "version": "1.0.0",
+  "description": "Skills for the Harbor Framework.",
+  "plugins": [
+    {
+      "name": "harbor-skills",
+      "description": "Complete skill set for Harbor evaluation framework",
+      "skills": ["harbor-task-creator", "harbor-adapter-creator", "harbor-cli"],
+      "strict": false,
+      "source": "."
+    }
+  ]
+}
