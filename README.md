@@ -12,7 +12,3 @@
 | [harbor-task-creator](skills/harbor-task-creator/) | Create Harbor tasks |
 | [harbor-adapter-creator](skills/harbor-adapter-creator/) | Build adapters that convert external benchmarks into Harbor tasks |
 | [harbor-cli](skills/harbor-cli/) | Complete reference for Harbor CLI commands and flags |
-
-## License
-
-[Apache 2.0](LICENSE)
