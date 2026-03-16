@@ -18,7 +18,7 @@
 **Claude Code**
 ```
 /plugin marketplace add harbor-framework/skills
-/plugin install skills@skills
+/plugin install skills@harbor-skills
 ```
 
 **Codex**
