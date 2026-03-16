@@ -17,11 +17,11 @@
 
 **Claude Code**
 ```
-/plugin marketplace add harbor-framework/harbor-skills
-/plugin install harbor-skills@harbor-skills
+/plugin marketplace add harbor-framework/skills
+/plugin install skills@skills
 ```
 
 **Codex**
 ```
-$skill-installer install skills from https://github.com/harbor-framework/harbor-skills
+$skill-installer install skills from https://github.com/harbor-framework/skills
 ```
