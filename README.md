@@ -20,7 +20,7 @@ To add the Harbor skills, just run the following commands.
 **Claude Code**
 ```
 /plugin marketplace add harbor-framework/skills
-/plugin install harbor-skills@harbor-skills
+/plugin install harbor-skills
 ```
 
 **Codex**
