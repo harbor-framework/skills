@@ -22,7 +22,7 @@ For complete flag tables with types and defaults for every command, read `refere
 | `harbor datasets list` | List available datasets |
 | `harbor datasets download` | Download a dataset |
 | `harbor adapters init` | Scaffold a new benchmark adapter |
-| `harbor adapters validate` | Validate an adapter |
+| `harbor adapters review` | Structural + AI review of an adapter |
 | `harbor tasks init` | Scaffold a new task |
 | `harbor tasks check` | AI quality assessment of a task |
 | `harbor tasks start-env` | Launch task environment interactively |
@@ -38,7 +38,7 @@ For complete flag tables with types and defaults for every command, read `refere
 
 The primary command. `harbor run` is an alias for `harbor jobs start`.
 
-**Defaults:** agent = `oracle`, n-concurrent = `4`, environment = `docker`, output = `./jobs`.
+**Defaults:** agent = `oracle`, n-concurrent = `1`, environment = `docker`, output = `./jobs`.
 
 **Essential flags:**
 
@@ -49,7 +49,7 @@ The primary command. `harbor run` is an alias for `harbor jobs start`.
 | `--config` | `-c` | Job config YAML/JSON file |
 | `--agent` | `-a` | Agent name (default: `oracle`). Repeatable |
 | `--model` | `-m` | Model identifier. Repeatable |
-| `--n-concurrent` | `-n` | Concurrent trials (default: `4`) |
+| `--n-concurrent` | `-n` | Concurrent trials (default: `1`) |
 | `--env` | `-e` | Environment backend (default: `docker`) |
 | `--jobs-dir` | `-o` | Output directory (default: `./jobs`) |
 | `--agent-env` | `--ae` | Pass env var to agent: `KEY=VALUE`. Repeatable |
@@ -210,10 +210,11 @@ harbor adapters init my-benchmark
 
 Interactive wizard that prompts for benchmark name, adapter ID, class name, description, source URL, and license. Creates the adapter directory with template files.
 
-### harbor adapters validate
+### harbor adapters review
 
 ```bash
-harbor adapters validate adapters/my-benchmark
+harbor adapters review -p adapters/my-benchmark
+harbor adapters review -p adapters/my-benchmark --skip-ai -o report.md
 ```
 
 ## harbor tasks
@@ -388,6 +389,17 @@ harbor cache clean --no-cache-dir   # Only clean Docker images
 | `--dry` | | Preview without deleting |
 | `--no-docker` | | Skip Docker image removal |
 | `--no-cache-dir` | | Skip `~/.cache/harbor` removal |
+
+## harbor admin upload-images
+
+Build and push task Docker images to a container registry. Updates `task.toml` with `docker_image` for pre-built image workflows. Hidden from `harbor --help` but fully functional.
+
+```bash
+harbor admin upload-images -r my-registry.io --tag 20260317
+harbor admin upload-images -r my-registry.io --dry-run -f "bash-*"
+```
+
+Key flags: `--tasks-dir / -t` (default: `tasks`), `--registry / -r` (required), `--tag` (default: today `YYYYMMDD`), `--dry-run`, `--filter / -f`, `--push/--no-push` (default: push), `--delete/--no-delete`, `--parallel / -n` (default: `1`), `--update-config/--no-update-config`, `--override-config/--no-override-config`. Full details in `references/flags.md`.
 
 ## Supported Agents
 

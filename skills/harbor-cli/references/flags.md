@@ -20,6 +20,8 @@ Detailed flags for every Harbor CLI command. This file is the authoritative refe
 - [harbor sweeps run](#harbor-sweeps-run)
 - [harbor traces export](#harbor-traces-export)
 - [harbor cache clean](#harbor-cache-clean)
+- [harbor adapters review](#harbor-adapters-review)
+- [harbor admin upload-images](#harbor-admin-upload-images)
 
 ---
 
@@ -27,7 +29,7 @@ Detailed flags for every Harbor CLI command. This file is the authoritative refe
 
 `harbor run` is an alias for `harbor jobs start`.
 
-**Defaults:** agent = `oracle`, n-concurrent = `4`, orchestrator = `local`, environment = `docker`, jobs-dir = `./jobs`.
+**Defaults:** agent = `oracle`, n-concurrent = `1`, orchestrator = `local`, environment = `docker`, jobs-dir = `./jobs`.
 
 ### Essential flags
 
@@ -38,7 +40,7 @@ Detailed flags for every Harbor CLI command. This file is the authoritative refe
 | `--config` | `-c` | Path | | Path to job config YAML/JSON (`JobConfig` schema) |
 | `--agent` | `-a` | str | `oracle` | Agent name. Can repeat for multiple agents |
 | `--model` | `-m` | str list | | Model for the agent. Can repeat for multiple models |
-| `--n-concurrent` | `-n` | int | `4` | Number of concurrent trials |
+| `--n-concurrent` | `-n` | int | `1` | Number of concurrent trials |
 | `--env` | `-e` | str | `docker` | Environment backend |
 | `--jobs-dir` | `-o` | Path | `./jobs` | Output directory for job results |
 
@@ -131,6 +133,10 @@ All default to `1.0`. Specific multipliers override the general `--timeout-multi
 | `--export-traces` / `--no-export-traces` | bool | `false` | Export traces after job completes |
 | `--sharegpt` / `--no-sharegpt` | bool | `false` | Emit ShareGPT-formatted conversations |
 | `--export-repo` | str | | HF repo id for pushing traces |
+| `--export-episodes` | str | `all` | Episodes to export per trial: `all` or `last` |
+| `--export-push` / `--no-export-push` | bool | `false` | Push exported dataset to HF Hub |
+| `--export-instruction-metadata` / `--no-export-instruction-metadata` | bool | `true` | Include instruction text in exported traces |
+| `--export-verifier-metadata` / `--no-export-verifier-metadata` | bool | `true` | Include verifier output in exported traces |
 
 ### Registry flags
 
@@ -331,3 +337,53 @@ Mutually exclusive. Default: Harbor's public registry.
 | `--dry` | | bool | `false` | Preview without deleting |
 | `--no-docker` | | bool | `false` | Skip Docker image removal |
 | `--no-cache-dir` | | bool | `false` | Skip `~/.cache/harbor` removal |
+
+---
+
+## harbor adapters review
+
+Three-part review: structural validation, optional AI review, and optional cross-review against original fork.
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `--path` | `-p` | Path | | Path to adapter directory (required) |
+| `--agent` | `-a` | str | `claude` | Agent for AI review: `claude` or `codex` |
+| `--skip-ai` | | bool | `false` | Skip AI review, run structural validation only |
+| `--model` | `-m` | str | | Model to use for AI review |
+| `--original-fork-repo` | | Path | | Path to original fork for cross-review |
+| `--output` | `-o` | Path | `adapter-review-report.md` | Save review report to this Markdown file |
+
+---
+
+## harbor traces export
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `--path` | `-p` | Path | | Path to trial dir or root containing trials (required) |
+| `--recursive` / `--no-recursive` | | bool | `true` | Search recursively for trial directories |
+| `--episodes` | | str | `all` | Which episodes per trial: `all` or `last` |
+| `--filter` | | str | `all` | Filter by outcome: `success`, `failure`, or `all` |
+| `--sharegpt` / `--no-sharegpt` | | bool | `false` | ShareGPT-formatted conversation output |
+| `--subagents` / `--no-subagents` | | bool | `true` | Include subagent trajectories |
+| `--instruction-metadata` / `--no-instruction-metadata` | | bool | `true` | Include instruction metadata |
+| `--verifier-metadata` / `--no-verifier-metadata` | | bool | `true` | Include verifier metadata |
+| `--push` / `--no-push` | | bool | `false` | Push dataset to Hugging Face Hub |
+| `--repo` | | str | | HF repo id in `org/name` format |
+| `--verbose` / `--no-verbose` | | bool | `false` | Verbose discovery output |
+
+---
+
+## harbor admin upload-images
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `--tasks-dir` | `-t` | Path | `tasks` | Directory containing task directories |
+| `--registry` | `-r` | str | | Container registry URL (required) |
+| `--tag` | | str | today's date | Image tag in `YYYYMMDD` format |
+| `--dry-run` | | bool | `false` | Print build/push commands without executing |
+| `--filter` | `-f` | str | | Glob pattern to filter tasks by name |
+| `--push` / `--no-push` | | bool | `true` | Push images to registry after building |
+| `--delete` / `--no-delete` | | bool | `false` | Delete local images after pushing |
+| `--parallel` | `-n` | int | `1` | Number of parallel image builds |
+| `--update-config` / `--no-update-config` | | bool | `false` | Write `docker_image` into `task.toml` |
+| `--override-config` / `--no-override-config` | | bool | `false` | Override existing `docker_image` in `task.toml` |
