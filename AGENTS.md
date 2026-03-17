@@ -1,6 +1,6 @@
 # harbor-skills — Agent Quick Reference
 
-Agent Skills for the [Harbor](https://github.com/harbor-framework/harbor) evaluation framework. Skills follow the [Agent Skills open standard](https://agentskills.io).
+Agent Skills for the [Harbor](https://github.com/harbor-framework/harbor) framework. Skills follow the [Agent Skills open standard](https://agentskills.io).
 
 ## Skill Format Quick Reference
 
