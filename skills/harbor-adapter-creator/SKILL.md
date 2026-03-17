@@ -480,7 +480,7 @@ After generating valid tasks, complete these steps before submitting:
 
 See [references/adapter-anatomy.md](references/adapter-anatomy.md#6-post-implementation-workflow) for commands and YAML job config format.
 
-## Common Pitfalls
+## Gotchas
 
 - **Missing reward.txt write**: The most common failure. test.sh must always write to `/logs/verifier/reward.txt`, even on error paths.
 - **Wrong parity_experiment.json format**: It is a JSON array `[{...}]`, not a plain object `{...}`. Using the singular filename `parity_experiment.json`, not plural.
