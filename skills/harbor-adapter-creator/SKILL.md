@@ -1,6 +1,6 @@
 ---
 name: harbor-adapter-creator
-description: "Create Harbor benchmark adapters that convert external datasets into Harbor task format. Covers the adapter class interface (generate_task, make_local_task_id), adapter directory layout, template files, parity_experiment.json, adapter_metadata.json, and the harbor adapters init wizard. Use when building adapters for new benchmarks, porting external evaluation datasets to Harbor, working with harbor adapters init/validate, or debugging adapter validation failures."
+description: "Create Harbor benchmark adapters that convert external benchmark datasets into Harbor task format. Use when porting an existing benchmark to Harbor, running parity experiments, registering a dataset to the Harbor registry, or debugging adapter validation failures. Covers: adapter class interface (generate_task, make_local_task_id), directory layout including YAML job configs, oracle verification, parity planning and experiments, dataset registration, and the full post-implementation workflow."
 ---
 
 # Creating Harbor Benchmark Adapters
@@ -25,6 +25,7 @@ Adapters convert external benchmarks (SimpleQA, GAIA, AiderPolyglot, CodePDE, sp
 adapters/<adapter-id>/
 ├── adapter.py              # Core conversion logic (adapter class)
 ├── run_adapter.py          # CLI entry point
+├── run_<adapter-id>.yaml   # Job config for oracle and parity experiment runs
 ├── README.md               # Benchmark docs, license, parity, citation
 ├── parity_experiment.json  # Parity tracking results (JSON array)
 ├── adapter_metadata.json   # Adapter metadata (JSON array)
@@ -39,7 +40,7 @@ adapters/<adapter-id>/
         └── solve.sh
 ```
 
-All files above are required. The validator (`harbor adapters validate`) checks for every one of them.
+All template files, parity_experiment.json, adapter_metadata.json, and README.md are required. The validator (`harbor adapters validate`) checks for all of them. The YAML job config is not validated but is expected for parity experiments.
 
 ## Scaffolding with harbor adapters init
 
@@ -393,7 +394,9 @@ A JSON **array** of experiment objects tracking how Harbor results compare to th
 ]
 ```
 
-The `adapter_pr`, `dataset_pr`, and `parity_pr` fields must be arrays of URLs when present. Each metric object needs `benchmark_name`, `metric`, and at least one of `original`, `tb_adapter`, or `harbor`.
+The `adapter_pr`, `dataset_pr`, and `parity_pr` fields in `parity_experiment.json` must be arrays of URLs when present. Each metric object needs `benchmark_name`, `metric`, and at least one of `original`, `tb_adapter`, or `harbor`.
+
+The `harbor_adapter` entry must include `parity_matching_agents` (array of `"agent@version+model"` strings). In the harbor-datasets `registry.json`, use `"version": "parity"` to enable `harbor jobs start -d mybenchmark@parity`.
 
 ## adapter_metadata.json
 
@@ -424,6 +427,7 @@ A JSON **array** describing the adapter and its relationship to the original ben
         "parity_sampling_rate": 0.1,
         "registry_benchmark_size": 500,
         "parity_costs": "150",
+        "parity_matching_agents": ["codex@0.77.0+openai/gpt-4o-2025-03-01"],
         "notes": "Full benchmark adapted. Parity on 10% sample."
       }
     ]
@@ -449,15 +453,32 @@ harbor adapters validate adapters/mybenchmark
 
 # Generate a single task to test
 python3 adapters/mybenchmark/run_adapter.py \
-  --output-dir /tmp/test-tasks \
+  --output-dir datasets/mybenchmark \
   --task-ids instance-001
 
 # Validate generated task
-harbor tasks check /tmp/test-tasks/mybenchmark-instance-001
+harbor tasks check datasets/mybenchmark/mybenchmark-instance-001
 
-# Run with oracle agent to verify solution works
-harbor trials start --task /tmp/test-tasks/mybenchmark-instance-001 --agent oracle
+# Run a single trial with oracle agent to verify the solution works
+harbor trials start -p datasets/mybenchmark/mybenchmark-instance-001 --agent oracle
+
+# Run all tasks as a batch job
+harbor jobs start -p datasets/mybenchmark --agent oracle
 ```
+
+## Post-Implementation Workflow
+
+After generating valid tasks, complete these steps before submitting:
+
+1. **Oracle Verification** — Run oracle agent across all tasks; must reach 100% pass rate.
+2. **Parity Planning** — Select a representative sample (typically 10%) for parity runs.
+3. **Parity Experiments** — Run target agent+model against both original harness and Harbor, using `run_<adapter-id>.yaml`. Record all trial scores.
+4. **Results Documentation** — Fill `parity_experiment.json`; upload results to the HuggingFace parity dataset.
+5. **Dataset Registration** — Fork `harbor-datasets`, place tasks under `datasets/<adapter-id>/`, open a PR with `"version": "parity"` in `registry.json`.
+6. **Adapter PR** — Open a PR to the Harbor repo with adapter code.
+7. **README Thoroughness** — Ensure README covers Overview, Parity results, License, and Citation.
+
+See [references/adapter-anatomy.md](references/adapter-anatomy.md#6-post-implementation-workflow) for commands and YAML job config format.
 
 ## Common Pitfalls
 
@@ -473,13 +494,4 @@ harbor trials start --task /tmp/test-tasks/mybenchmark-instance-001 --agent orac
 
 ## Existing Adapter Patterns
 
-| Adapter | Benchmark | Key Pattern | Data Source |
-|---------|-----------|-------------|-------------|
-| simpleqa | OpenAI SimpleQA | LLM-judge grading via `llm_judge.py` + `ground_truth.json` | CSV from OpenAI public URL |
-| gaia | GAIA | File attachments, string matching, `_render_template` helper | HuggingFace or local JSONL |
-| aider_polyglot | Aider Polyglot | Language-specific workspace setup, encrypted oracle payload | Exercism repo directories |
-| codepde | CodePDE | Pytest + nRMSE evaluation, HuggingFace data download in test.sh | CodePDE repo clone |
-| spider2-dbt | Spider2-DBT | dbt project setup, DuckDB gold-standard DB comparison | Spider2-DBT repo clone |
-| strongreject | StrongReject | Safety/refusal evaluation, defense score metric | StrongReject dataset |
-
-See [references/adapter-anatomy.md](references/adapter-anatomy.md) for annotated walkthroughs of real adapter patterns, including a QA adapter, an attachment-based adapter, and a code evaluation adapter.
+See [references/adapter-anatomy.md](references/adapter-anatomy.md) for annotated walkthroughs of all existing adapters (SimpleQA, GAIA, AiderPolyglot, CodePDE, spider2-dbt, StrongReject) and a full comparison table.

@@ -9,6 +9,8 @@ Real adapter patterns from the Harbor ecosystem, showing the class interface, da
 - [3. Code Evaluation Adapter (AiderPolyglot pattern)](#3-code-evaluation-adapter-aiderpolyglot-pattern) -- language-specific setup, encrypted oracle
 - [4. Scientific Computing Adapter (CodePDE pattern)](#4-scientific-computing-adapter-codepde-pattern) -- pytest + nRMSE, HuggingFace data download
 - [5. Common Patterns Across All Adapters](#5-common-patterns-across-all-adapters)
+- [6. Post-Implementation Workflow](#6-post-implementation-workflow) -- oracle, parity, dataset registration
+- [7. Existing Adapter Patterns](#7-existing-adapter-patterns) -- comparison table
 
 ---
 
@@ -434,3 +436,109 @@ except Exception as e:
 | **Data Transformation** (spider2-dbt) | dbt + DuckDB in Dockerfile, project files | Compare against gold-standard database |
 | **Safety / Refusal** (StrongReject) | Minimal environment | Custom scoring of defense behavior |
 | **Graded Scoring** (any) | Same as above | Write float 0.0-1.0 for partial credit |
+
+---
+
+## 6. Post-Implementation Workflow
+
+After the adapter generates valid tasks and oracle verification passes, there are 6 more steps before the adapter is ready to merge.
+
+### Step 1: Oracle Verification
+
+Run the oracle agent against all generated tasks. Every task must pass with reward `1.0`.
+
+```bash
+# Run oracle against all generated tasks
+harbor jobs start -p datasets/mybenchmark --agent oracle
+
+# Check results
+harbor view jobs
+```
+
+Fix any tasks that fail before proceeding. Common oracle failures: shell escaping bugs in `solve.sh`, wrong working directory, missing `mkdir -p` for output directory.
+
+### Step 2: Parity Planning
+
+Select a representative sample of tasks for the parity experiment — typically 10% or 50 tasks, whichever is larger. Identify which agent+model combination matches the original benchmark's reported results.
+
+Create a `run_<adapter-id>.yaml` job config in the adapter directory:
+
+```yaml
+# run_mybenchmark.yaml
+# Reference config for running parity experiment
+dataset: datasets/mybenchmark
+agent: codex
+model: openai/gpt-4o-2025-03-01
+num_trials: 1
+task_ids:
+  - mybenchmark-instance-001
+  - mybenchmark-instance-002
+  # ... parity sample
+```
+
+The naming convention varies across adapters (e.g., `gaia.yaml`, `simpleqa_oracle.yaml`, `simpleqa_parity_claude_opus4_6.yaml`). Use a name that makes the config's purpose clear.
+
+### Step 3: Parity Experiments
+
+Run the same agent+model on both the original benchmark harness and on Harbor. Compare results.
+
+```bash
+# Run Harbor parity experiment using the YAML config
+harbor jobs start -c adapters/mybenchmark/run_mybenchmark.yaml
+
+# View results
+harbor view jobs
+```
+
+Record all individual trial scores in addition to the mean. The `parity_experiment.json` requires `original_trials` and `harbor_trials` arrays.
+
+### Step 4: Results Documentation and HuggingFace Upload
+
+1. Fill in `parity_experiment.json` with the experiment results (see schema in SKILL.md).
+2. Upload results to the [HuggingFace Harbor Parity Experiments dataset](https://huggingface.co/datasets/harborframework/parity-experiments) by opening a PR there following its contribution guide.
+
+### Step 5: Dataset Registration
+
+Fork the `harbor-datasets` repository. Place all generated tasks under `datasets/<adapter-id>/`. Update `registry.json` with a new dataset entry:
+
+```json
+{
+  "name": "mybenchmark",
+  "version": "1.0",
+  "description": "MyBenchmark tasks adapted for Harbor",
+  "tasks": [
+    {
+      "name": "mybenchmark-instance-001",
+      "git_url": "https://github.com/laude-institute/harbor-datasets.git",
+      "git_commit_id": "<commit-hash>",
+      "path": "datasets/mybenchmark/mybenchmark-instance-001"
+    }
+  ]
+}
+```
+
+Add a second entry with `"version": "parity"` and only the parity sample tasks — this enables `harbor jobs start -d mybenchmark@parity`. Open a PR to `harbor-datasets`.
+
+### Step 6: Adapter PR
+
+Open a PR to the main `harbor` repository with:
+- The full `adapters/<adapter-id>/` directory
+- `adapter.py`, `run_adapter.py`, `run_<adapter-id>.yaml`
+- `parity_experiment.json`, `adapter_metadata.json`
+- `README.md` with Overview, Parity results, License, and Citation sections
+- `template/` with all required files
+
+Link the dataset PR and HuggingFace parity experiment in the PR description.
+
+---
+
+## 7. Existing Adapter Patterns
+
+| Adapter | Benchmark | Key Pattern | Data Source |
+|---------|-----------|-------------|-------------|
+| simpleqa | OpenAI SimpleQA | LLM-judge grading via `llm_judge.py` + `ground_truth.json` | CSV from OpenAI public URL |
+| gaia | GAIA | File attachments, string matching, `_render_template` helper | HuggingFace or local JSONL |
+| aider_polyglot | Aider Polyglot | Language-specific workspace setup, encrypted oracle payload | Exercism repo directories |
+| codepde | CodePDE | Pytest + nRMSE evaluation, HuggingFace data download in test.sh | CodePDE repo clone |
+| spider2-dbt | Spider2-DBT | dbt project setup, DuckDB gold-standard DB comparison | Spider2-DBT repo clone |
+| strongreject | StrongReject | Safety/refusal evaluation, defense score metric | StrongReject dataset |
