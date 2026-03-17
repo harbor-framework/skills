@@ -18,8 +18,10 @@ harbor tasks init my-task
 #   --no-pytest                   Use plain bash tests instead of pytest template
 #   --no-solution                 Skip generating solution/solve.sh
 #   --include-canary-strings      Embed tracking GUIDs in generated files
-#   --include-standard-metadata   Add Terminal Bench metadata fields to task.toml
+#   --metadata-template <path>    Seed task.toml [metadata] from a .toml template
 ```
+
+To convert Terminal Bench tasks to Harbor format: `harbor tasks migrate -i <tb-tasks/> -o <harbor-tasks/>`
 
 Or create the directory structure manually:
 
@@ -309,6 +311,40 @@ python3 sort.py --fix
 - Should work with the same environment the agent sees
 - Validate with: `harbor trials start --path ./my-task --agent oracle`
 - Environment variables from `[solution].env` in task.toml are injected (plus `DEBIAN_FRONTEND=noninteractive`)
+
+## Testing Your Task
+
+### Step 1: Test interactively
+
+```bash
+harbor tasks start-env -p ./my-task
+```
+
+This builds the image, starts compose services, uploads `tests/` and `solution/` into the container, then drops you into an interactive shell. From there:
+
+```bash
+bash /solution/solve.sh          # run the reference solution
+bash /tests/test.sh              # verify reward file is written correctly
+cat /logs/verifier/reward.txt    # check the reward
+```
+
+This is the fastest way to catch broken tests, missing dependencies, or reward file issues before running any agents.
+
+### Step 2: Test with the Oracle agent
+
+```bash
+harbor trials start --path ./my-task --agent oracle
+```
+
+The Oracle runs `solve.sh` automatically, then verifies with `test.sh`. A score of 1.0 confirms the task is solvable and the tests work correctly.
+
+### Step 3: Debug instruction issues (optional)
+
+```bash
+harbor tasks debug <task-id> -m sonnet --tasks-dir ./tasks
+```
+
+After running a job with real agents, use this to diagnose whether repeated failures are caused by an unclear or insufficient instruction.
 
 ## Quality Checklist
 
