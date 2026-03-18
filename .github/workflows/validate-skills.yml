@@ -5,13 +5,11 @@ on:
     branches: [main]
     paths:
       - 'skills/**'
-      - 'scripts/**'
       - '.github/workflows/validate-skills.yml'
   pull_request:
     branches: [main]
     paths:
       - 'skills/**'
-      - 'scripts/**'
       - '.github/workflows/validate-skills.yml'
   workflow_dispatch:
 
@@ -21,19 +19,53 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Validate skills
+        run: |
+          python3 - <<'EOF'
+          import sys, re, yaml
+          from pathlib import Path
 
-      - name: Install dependencies
-        run: pip install pyyaml
+          ALLOWED = {'name', 'description', 'license', 'allowed-tools', 'metadata', 'compatibility'}
+          skills = ['skills/harbor-task-creator', 'skills/harbor-adapter-creator', 'skills/harbor-cli']
+          failed = False
 
-      - name: Validate harbor-task-creator
-        run: python scripts/quick_validate.py ./skills/harbor-task-creator
+          for skill_path in skills:
+              path = Path(skill_path)
+              skill_md = path / 'SKILL.md'
+              if not skill_md.exists():
+                  print(f'FAIL {skill_path}: SKILL.md not found'); failed = True; continue
+              content = skill_md.read_text()
+              if not content.startswith('---'):
+                  print(f'FAIL {skill_path}: no YAML frontmatter'); failed = True; continue
+              match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
+              if not match:
+                  print(f'FAIL {skill_path}: invalid frontmatter'); failed = True; continue
+              try:
+                  fm = yaml.safe_load(match.group(1))
+              except yaml.YAMLError as e:
+                  print(f'FAIL {skill_path}: {e}'); failed = True; continue
+              if not isinstance(fm, dict):
+                  print(f'FAIL {skill_path}: frontmatter must be a dict'); failed = True; continue
+              extra = set(fm.keys()) - ALLOWED
+              if extra:
+                  print(f'FAIL {skill_path}: unexpected keys: {extra}'); failed = True; continue
+              for field in ('name', 'description'):
+                  if field not in fm:
+                      print(f'FAIL {skill_path}: missing {field!r}'); failed = True
+              name = str(fm.get('name', '')).strip()
+              if name:
+                  if not re.match(r'^[a-z0-9-]+$', name) or name.startswith('-') or name.endswith('-') or '--' in name:
+                      print(f'FAIL {skill_path}: invalid name {name!r}'); failed = True; continue
+                  if len(name) > 64:
+                      print(f'FAIL {skill_path}: name too long'); failed = True; continue
+              desc = str(fm.get('description', '')).strip()
+              if desc:
+                  if '<' in desc or '>' in desc:
+                      print(f'FAIL {skill_path}: description contains angle brackets'); failed = True; continue
+                  if len(desc) > 1024:
+                      print(f'FAIL {skill_path}: description too long'); failed = True; continue
+              if not failed:
+                  print(f'OK   {skill_path}')
 
-      - name: Validate harbor-adapter-creator
-        run: python scripts/quick_validate.py ./skills/harbor-adapter-creator
-
-      - name: Validate harbor-cli
-        run: python scripts/quick_validate.py ./skills/harbor-cli
+          sys.exit(1 if failed else 0)
+          EOF

@@ -51,6 +51,6 @@ Each skill lives in `skills/<skill-name>/` with a required `SKILL.md`:
 
 ## Validation & Testing
 
-- `python scripts/quick_validate.py ./skills/<name>` to check frontmatter and structure
+- Run the CI workflow locally or push a change to `skills/**` to trigger validation
 - CI runs validation on every push and PR (`.github/workflows/validate-skills.yml`)
 - Use the skill-creator workflow to test skills with real prompts before publishing
