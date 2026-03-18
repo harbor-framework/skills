@@ -16,19 +16,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          node-version: '20'
+          python-version: '3.11'
 
-      - name: Install skills-ref CLI
-        run: npm install -g @anthropic-ai/skills-ref
+      - name: Install dependencies
+        run: pip install pyyaml
 
       - name: Validate harbor-task-creator
-        run: skills-ref validate ./skills/harbor-task-creator
+        run: python scripts/quick_validate.py ./skills/harbor-task-creator
 
       - name: Validate harbor-adapter-creator
-        run: skills-ref validate ./skills/harbor-adapter-creator
+        run: python scripts/quick_validate.py ./skills/harbor-adapter-creator
 
       - name: Validate harbor-cli
-        run: skills-ref validate ./skills/harbor-cli
+        run: python scripts/quick_validate.py ./skills/harbor-cli
