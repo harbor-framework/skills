@@ -29,7 +29,8 @@ $skill-installer install skills from https://github.com/harbor-framework/skills
 ```
 
 **Cursor**
+
+Install from the marketplace panel in Cursor, or for local testing:
 ```
-/plugin marketplace add harbor-framework/skills
-/plugin install harbor-skills
+ln -s /path/to/harbor-skills ~/.cursor/plugins/local/harbor-skills
 ```
