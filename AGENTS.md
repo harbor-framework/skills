@@ -39,6 +39,7 @@ Each skill lives in `skills/<skill-name>/` with a required `SKILL.md`:
 - Keep `SKILL.md` body < 500 lines; put detailed tables and walkthroughs in `references/`
 - Descriptions should be slightly "pushy" — err toward triggering rather than not
 - No `scripts/` — Harbor already has CLI tools for scaffolding and validation (`harbor tasks init`, `harbor adapters init`)
+- The repo supports Claude Code (`.claude-plugin/`), Codex, and Cursor (`.cursor-plugin/`); keep both plugin configs in sync when adding or renaming skills
 - The `name` frontmatter field must match the directory name exactly
 
 ## Common Pitfalls

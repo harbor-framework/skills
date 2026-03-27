@@ -1,0 +1,16 @@
+{
+  "name": "harbor-skills",
+  "owner": {
+    "name": "harbor-framework"
+  },
+  "metadata": {
+    "description": "Skills for the Harbor Framework."
+  },
+  "plugins": [
+    {
+      "name": "harbor-skills",
+      "source": "./",
+      "description": "Skills for the Harbor Framework."
+    }
+  ]
+}
