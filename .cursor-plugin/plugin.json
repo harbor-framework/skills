@@ -1,0 +1,16 @@
+{
+  "name": "harbor-skills",
+  "displayName": "Harbor Skills",
+  "version": "1.0.0",
+  "description": "Agent skills for the Harbor evaluation framework. Covers CLI commands, task creation, and adapter building.",
+  "author": {
+    "name": "harbor-framework"
+  },
+  "homepage": "https://harborframework.com/docs",
+  "repository": "https://github.com/harbor-framework/skills",
+  "license": "Apache-2.0",
+  "keywords": ["harbor", "evaluation", "benchmarks", "agent-skills", "tasks", "adapters", "cli"],
+  "category": "developer-tools",
+  "tags": ["evaluation", "benchmarks", "developer-tools"],
+  "skills": "./skills/"
+}

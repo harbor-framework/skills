@@ -27,3 +27,9 @@ To add the Harbor skills, just run the following commands.
 ```
 $skill-installer install skills from https://github.com/harbor-framework/skills
 ```
+
+**Cursor**
+```
+/plugin marketplace add harbor-framework/skills
+/plugin install harbor-skills
+```
