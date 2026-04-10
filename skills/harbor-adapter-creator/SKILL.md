@@ -334,7 +334,10 @@ version = "1.0"
 source = "mybenchmark/instance-42"
 
 [metadata]
-author_name = "Your Name"
+# author_name/author_email are optional; when present they credit the ORIGINAL
+# benchmark authors, not the adapter builder. Adapter builder info belongs in
+# adapter_metadata.json under "adapter_builders".
+author_name = "Jane Doe"        # original benchmark author
 difficulty = "medium"           # easy, medium, hard
 category = "qa"
 tags = ["factual", "reasoning"]
@@ -397,6 +400,8 @@ A JSON **array** of experiment objects tracking how Harbor results compare to th
 The `adapter_pr`, `dataset_pr`, and `parity_pr` fields in `parity_experiment.json` must be arrays of URLs when present. Each metric object needs `benchmark_name`, `metric`, and at least one of `original`, `tb_adapter`, or `harbor`.
 
 The `harbor_adapter` entry must include `parity_matching_agents` (array of `"agent@version+model"` strings). In the harbor-datasets `registry.json`, use `"version": "parity"` to enable `harbor jobs start -d mybenchmark@parity`.
+
+**notes field:** Use `notes` to document anything that affects the comparison's validity. In particular, if the original benchmark published a single score while you ran 3 Harbor trials (or vice versa), you **must** explain the asymmetry here — e.g., `"50 tasks; original published 1 score vs. 3 Harbor runs; see notes for variance"`. Reviewers will flag unexplained run-count mismatches.
 
 ## adapter_metadata.json
 
@@ -491,6 +496,8 @@ See [references/adapter-anatomy.md](references/adapter-anatomy.md#6-post-impleme
 - **Using /app vs /workspace inconsistently**: Pick one working directory and be consistent between instruction.md, test.sh, and Dockerfile WORKDIR. Some adapters use `/app`, others use `/workspace`.
 - **Not escaping shell-unsafe characters**: Answers containing single quotes, backticks, or dollar signs can break test.sh or solve.sh. Escape them when embedding in shell scripts.
 - **Missing `mkdir -p /logs/verifier`**: Some base images may not have this directory. Create it in test.sh before writing reward.txt.
+- **`author_name`/`author_email` in task.toml credit original authors, not you**: These optional fields are for the benchmark's original authors. Your contact info as adapter builder goes in `adapter_metadata.json` under `adapter_builders`.
+- **Unexplained parity run-count asymmetry**: If the original benchmark published a single score but you ran 3 Harbor trials (or any mismatch), explain this in the `notes` field of `parity_experiment.json`. Reviewers will reject submissions where the number of runs differs without explanation.
 
 ## Existing Adapter Patterns
 
