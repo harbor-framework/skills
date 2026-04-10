@@ -54,6 +54,7 @@ The primary command. `harbor run` is an alias for `harbor jobs start`.
 | `--jobs-dir` | `-o` | Output directory (default: `./jobs`) |
 | `--agent-env` | `--ae` | Pass env var to agent: `KEY=VALUE`. Repeatable |
 | `--agent-kwarg` | `--ak` | Agent kwarg: `key=value`. Repeatable |
+| `--verifier-env` | `--ve` | Env var for verifier: `KEY=VALUE`. Repeatable |
 | `--task-name` | `-t` | Include tasks by glob pattern. Repeatable |
 | `--exclude-task-name` | `-x` | Exclude tasks by glob. Repeatable |
 | `--n-tasks` | `-l` | Max tasks to run |
@@ -144,6 +145,7 @@ Run a single trial. Useful for debugging and task development.
 | `--trials-dir` | | Output directory (default: `./trials`) |
 | `--agent-env` | `--ae` | Env var for agent: `KEY=VALUE`. Repeatable |
 | `--agent-kwarg` | `--ak` | Agent kwarg: `key=value`. Repeatable |
+| `--verifier-env` | `--ve` | Env var for verifier: `KEY=VALUE`. Repeatable |
 | `--no-cleanup` | | Keep environment after trial |
 | `--no-verify` | | Skip running tests |
 
@@ -411,10 +413,12 @@ Key flags: `--tasks-dir / -t` (default: `tasks`), `--registry / -r` (required), 
 | Aider | `aider` | |
 | Codex | `codex` | |
 | Cline CLI | `cline-cli` | Model format: `provider:model-id` |
+| Copilot CLI | `copilot-cli` | |
 | Cursor CLI | `cursor-cli` | |
 | Gemini CLI | `gemini-cli` | Needs `GOOGLE_API_KEY` or `GEMINI_API_KEY` |
 | Goose | `goose` | Model format: `provider/model_name` |
 | Mini SWE-agent | `mini-swe-agent` | |
+| Pi | `pi` | |
 | SWE-agent | `swe-agent` | |
 | OpenCode | `opencode` | |
 | OpenHands | `openhands` | Needs `LLM_API_KEY` and `LLM_MODEL` |

@@ -76,6 +76,7 @@ Detailed flags for every Harbor CLI command. This file is the authoritative refe
 |------|-------|------|---------|-------------|
 | `--verifier-import-path` | | str | | Python import path for custom verifier |
 | `--verifier-kwarg` | `--vk` | str list | | Verifier kwarg as `key=value`. Can repeat |
+| `--verifier-env` | `--ve` | str list | | Env var for verifier as `KEY=VALUE`. Overrides task.toml `[verifier.env]`. Can repeat |
 
 ### Job control flags
 
@@ -183,6 +184,7 @@ Shares many flags with `harbor jobs start` but operates on a single task. Key di
 | `--trials-dir` | | Path | `./trials` | Output directory |
 | `--agent-env` | `--ae` | str list | | Env var for agent as `KEY=VALUE`. Can repeat |
 | `--agent-kwarg` | `--ak` | str list | | Agent kwarg as `key=value`. Can repeat |
+| `--verifier-env` | `--ve` | str list | | Env var for verifier as `KEY=VALUE`. Overrides task.toml `[verifier.env]`. Can repeat |
 | `--agent-import-path` | | str | | Custom agent import path |
 | `--environment-import-path` | | str | | Custom environment import path |
 | `--environment-kwarg` | `--ek` | str list | | Environment kwarg as `key=value`. Can repeat |

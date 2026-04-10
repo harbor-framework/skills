@@ -231,7 +231,70 @@ The test script runs inside the container AFTER the agent finishes. It determine
 - `reward.json` supports multiple named rewards (e.g., `{"reward": 1.0, "quality": 0.8, "style": 0.6}`)
 - MUST write the reward file in ALL code paths — if missing, the trial fails with `RewardFileNotFoundError`; if empty, `RewardFileEmptyError`
 
-**Pattern 1: Pytest + CTRF (recommended for complex tasks)**
+**Pattern 1: Harbor Reward Kit (recommended for new tasks)**
+
+[`harbor-rewardkit`](https://harborframework.com/docs/rewardkit) is a lightweight package that lets you define criteria as Python functions or TOML-based LLM judges. The test.sh becomes a one-liner and rewardkit handles reward file writing.
+
+```bash
+#!/bin/bash
+uvx harbor-rewardkit@0.1 /tests
+```
+
+Write criteria as Python files in `tests/` using the `@criterion` decorator or built-in criteria:
+
+```python
+# tests/correctness/check.py  — programmatic criteria
+from rewardkit import criteria, criterion
+from pathlib import Path
+
+# Built-in criteria (file checks, HTTP, SQLite, etc.)
+criteria.file_exists("/app/output.txt")
+criteria.file_contains("/app/output.txt", "expected")
+
+# Custom criterion using @criterion decorator
+@criterion(shared=True)
+def output_is_valid(workspace: Path) -> float:
+    """Check the output meets requirements."""
+    p = workspace / "output.txt"
+    if not p.exists():
+        return 0.0
+    lines = p.read_text().strip().splitlines()
+    return 1.0 if len(lines) >= 5 else 0.0
+```
+
+For LLM-as-judge evaluation, add a TOML config file in `tests/`:
+
+```toml
+# tests/quality/quality.toml
+[judge]
+judge = "anthropic/claude-sonnet-4-6"
+files = ["/app/main.py"]
+
+[[criterion]]
+name = "code_quality"
+description = "Is the code well-structured and readable?"
+type = "likert"
+points = 5
+weight = 1.0
+
+[[criterion]]
+name = "edge_case_handling"
+description = "Does the code handle edge cases like empty strings?"
+type = "binary"
+weight = 1.0
+```
+
+Rewardkit aggregates all criteria scores into a weighted average and writes `reward.txt` automatically. Set `[verifier.env]` in task.toml to pass LLM API keys:
+
+```toml
+[verifier]
+timeout_sec = 120.0
+
+[verifier.env]
+ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY}"
+```
+
+**Pattern 2: Pytest + CTRF (for tasks with complex test logic)**
 
 ```bash
 #!/bin/bash
@@ -258,7 +321,7 @@ Use `set -uo pipefail` (without `-e`) so the script continues to write the rewar
 
 CTRF (`ctrf.json`) is displayed in the Harbor Viewer UI for detailed per-test inspection. It is NOT used for reward calculation — the reward always comes from `reward.txt` or `reward.json`.
 
-**Pattern 2: Simple file check (for straightforward tasks)**
+**Pattern 3: Simple file check (for straightforward tasks)**
 
 ```bash
 #!/bin/bash
@@ -269,7 +332,7 @@ else
 fi
 ```
 
-**Pattern 3: Partial credit with multiple named rewards**
+**Pattern 4: Partial credit with multiple named rewards**
 
 ```bash
 #!/bin/bash
@@ -291,9 +354,9 @@ echo "scale=2; $SCORE / $TOTAL" | bc > /logs/verifier/reward.txt
 **Key rules:**
 - Working directory when test.sh runs is `/tests/`
 - Install test dependencies in test.sh, NOT in the Dockerfile
-- Always write the reward file, even on error
+- Always write the reward file, even on error (rewardkit handles this automatically)
 - Use CTRF output (`--ctrf`) for pytest — Harbor displays it in the Viewer for human inspection
-- Pin all dependency versions in test.sh (e.g., `pytest==8.4.1`)
+- Pin all dependency versions in test.sh (e.g., `pytest==8.4.1`, `harbor-rewardkit@0.1`)
 
 ## Writing solution/solve.sh
 
