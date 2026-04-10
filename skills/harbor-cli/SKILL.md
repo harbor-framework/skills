@@ -411,7 +411,7 @@ Key flags: `--tasks-dir / -t` (default: `tasks`), `--registry / -r` (required), 
 | Nop | `nop` | Does nothing (baseline) |
 | Claude Code | `claude-code` | Needs `ANTHROPIC_API_KEY` |
 | Aider | `aider` | |
-| Codex | `codex` | |
+| Codex | `codex` | Auth via `~/.codex/auth.json` (auto-detected) or `CODEX_AUTH_JSON_PATH`; set `CODEX_FORCE_API_KEY=1` to use `OPENAI_API_KEY` instead |
 | Cline CLI | `cline-cli` | Model format: `provider:model-id` |
 | Copilot CLI | `copilot-cli` | |
 | Cursor CLI | `cursor-cli` | |
