@@ -9,8 +9,10 @@ Detailed flags for every Harbor CLI command. This file is the authoritative refe
 - [harbor jobs summarize](#harbor-jobs-summarize)
 - [harbor trials start](#harbor-trials-start)
 - [harbor trials summarize](#harbor-trials-summarize)
+- [harbor download](#harbor-download)
 - [harbor datasets list](#harbor-datasets-list)
 - [harbor datasets download](#harbor-datasets-download)
+- [harbor tasks download](#harbor-tasks-download)
 - [harbor tasks init](#harbor-tasks-init)
 - [harbor tasks check](#harbor-tasks-check)
 - [harbor tasks start-env](#harbor-tasks-start-env)
@@ -211,12 +213,28 @@ Shares many flags with `harbor jobs start` but operates on a single task. Key di
 
 ---
 
+## harbor download
+
+Top-level command that auto-detects whether the argument is a task or dataset. Same `--export` / `--cache` mode logic as `harbor datasets download` and `harbor tasks download`.
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `NAME` | | str | | Task (`org/name@ref`) or dataset (`name@version`) (positional arg) |
+| `--output-dir` | `-o` | Path | see description | Cache: `~/.cache/harbor/tasks`. Export: current dir |
+| `--overwrite` | | bool | `false` | Overwrite cached items |
+| `--export` | | bool | `false` | Force export mode |
+| `--cache` | | bool | `false` | Force cache mode |
+| `--registry-url` | | str | | Legacy registry.json URL (for legacy datasets) |
+| `--registry-path` | | Path | | Path to legacy registry.json file |
+
+---
+
 ## harbor datasets list
 
 | Flag | Type | Description |
 |------|------|-------------|
-| `--registry-url` | str | URL of remote `registry.json` |
-| `--registry-path` | Path | Path to local `registry.json` |
+| `--registry-url` | str | URL of remote `registry.json` (legacy) |
+| `--registry-path` | Path | Path to local `registry.json` (legacy) |
 
 Mutually exclusive. Default: Harbor's public registry.
 
@@ -224,13 +242,29 @@ Mutually exclusive. Default: Harbor's public registry.
 
 ## harbor datasets download
 
+Two modes: **cache** (content-addressable, `~/.cache/harbor/tasks`) and **export** (human-readable, `<output-dir>/<dataset-name>/<task-name>/`). Export mode is the default when `--output-dir` is given; cache mode is the default otherwise. `--export` and `--cache` override the auto-detection.
+
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
 | `DATASET` | | str | | Dataset as `name` or `name@version` (positional arg) |
-| `--output-dir` | `-o` | Path | `~/.cache/harbor/tasks` | Download directory |
+| `--output-dir` | `-o` | Path | see description | Cache: `~/.cache/harbor/tasks`. Export: current dir |
 | `--overwrite` | | bool | `false` | Re-download even if cached |
-| `--registry-url` | | str | | Remote registry URL |
-| `--registry-path` | | Path | | Local registry path |
+| `--export` | | bool | `false` | Force export mode |
+| `--cache` | | bool | `false` | Force cache mode |
+| `--registry-url` | | str | | Legacy registry.json URL |
+| `--registry-path` | | Path | | Path to legacy registry.json file |
+
+---
+
+## harbor tasks download
+
+| Flag | Short | Type | Default | Description |
+|------|-------|------|---------|-------------|
+| `NAME` | | str | | Task as `org/name@ref` (positional arg; `@ref` defaults to `@latest`) |
+| `--output-dir` | `-o` | Path | see description | Cache: `~/.cache/harbor/tasks`. Export: current dir |
+| `--overwrite` | | bool | `false` | Overwrite cached task |
+| `--export` | | bool | `false` | Force export mode: `<output-dir>/<task-name>/` |
+| `--cache` | | bool | `false` | Force cache mode: content-addressable layout |
 
 ---
 
