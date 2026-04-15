@@ -19,6 +19,7 @@ For complete flag tables with types and defaults for every command, read `refere
 | `harbor jobs summarize` | AI-powered failure summaries for a job |
 | `harbor trials start` | Run a single trial (debugging) |
 | `harbor trials summarize` | AI-powered summary of a single trial |
+| `harbor download` | Download a task or dataset (auto-detects type) |
 | `harbor datasets list` | List available datasets |
 | `harbor datasets download` | Download a dataset |
 | `harbor adapters init` | Scaffold a new benchmark adapter |
@@ -192,13 +193,49 @@ Flags `--registry-url` and `--registry-path` are mutually exclusive. Default: Ha
 ```bash
 harbor datasets download terminal-bench@2.0
 harbor datasets download terminal-bench@2.0 -o ./my-tasks --overwrite
+harbor datasets download org/my-dataset@latest --export          # export layout
+harbor datasets download org/my-dataset@latest -o ./out --cache  # force cache layout
 ```
+
+Two download modes (see also `harbor download`):
+- **Cache mode** (default): content-addressable layout under `~/.cache/harbor/tasks`.
+- **Export mode** (default when `--output-dir` is given, or with `--export`): human-readable `<output-dir>/<dataset-name>/<task-name>/`.
 
 | Flag | Short | Description |
 |------|-------|-------------|
 | `DATASET` | | Name or `name@version` (positional) |
-| `--output-dir` | `-o` | Download dir (default: `~/.cache/harbor/tasks`) |
+| `--output-dir` | `-o` | Download dir. Cache mode default: `~/.cache/harbor/tasks`. Export mode default: current dir |
 | `--overwrite` | | Re-download even if cached |
+| `--export` | | Force export mode |
+| `--cache` | | Force cache mode |
+| `--registry-url` | | Legacy registry.json URL |
+| `--registry-path` | | Path to legacy registry.json file |
+
+## harbor download
+
+Generic top-level download command. Auto-detects whether the argument is a task or dataset, then delegates to the appropriate downloader. Equivalent to calling `harbor tasks download` or `harbor datasets download` directly.
+
+```bash
+harbor download org/my-task@latest
+harbor download my-dataset@v1.0
+harbor download org/my-dataset@latest -o ./datasets
+harbor download org/my-dataset@latest --export
+harbor download org/my-dataset@latest -o ./out --cache
+```
+
+**Download modes:**
+- **Cache mode** (default): content-addressable layout under `~/.cache/harbor/tasks`. Tasks are deduplicated across datasets.
+- **Export mode** (default when `--output-dir` is given, or with `--export`): human-readable layout. Datasets produce `<output-dir>/<dataset-name>/<task-name>/`; tasks produce `<output-dir>/<task-name>/`.
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `NAME` | | Task or dataset `org/name@ref` or `name@version` (positional) |
+| `--output-dir` | `-o` | Download directory |
+| `--overwrite` | | Overwrite cached items |
+| `--export` | | Force export mode |
+| `--cache` | | Force cache mode |
+| `--registry-url` | | Legacy registry.json URL (for legacy datasets) |
+| `--registry-path` | | Path to legacy registry.json file |
 
 ## harbor adapters
 
@@ -218,6 +255,24 @@ harbor adapters review -p adapters/my-benchmark --skip-ai -o report.md
 ```
 
 ## harbor tasks
+
+### harbor tasks download
+
+Download a single task from the Harbor package registry.
+
+```bash
+harbor tasks download org/my-task@latest
+harbor tasks download org/my-task@3 -o ./my-tasks
+harbor tasks download org/my-task@latest --export
+```
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `NAME` | | Task as `org/name@ref` (positional; `@ref` defaults to `@latest`) |
+| `--output-dir` | `-o` | Download dir (defaults to `~/.cache/harbor/tasks` in cache mode, or current dir in export mode) |
+| `--overwrite` | | Overwrite cached task |
+| `--export` | | Force export mode: `<output-dir>/<task-name>/` |
+| `--cache` | | Force cache mode: content-addressable layout |
 
 ### harbor tasks init
 
@@ -454,7 +509,8 @@ harbor view ./trials
 
 ```bash
 harbor datasets list
-harbor datasets download terminal-bench@2.0
+harbor datasets download terminal-bench@2.0              # cache mode (default)
+harbor download terminal-bench@2.0 --export             # export to ./terminal-bench/
 harbor run -d terminal-bench@2.0 -a claude-code -m anthropic/claude-sonnet-4-1 -n 8
 harbor view ./jobs
 harbor traces export -p ./jobs/my-job --push --repo my-org/traces
