@@ -21,23 +21,30 @@ Adapters convert external benchmarks (SimpleQA, GAIA, AiderPolyglot, CodePDE, sp
 
 ## Adapter Directory Structure
 
+Adapters now use a `src` layout (Python package under `src/<adapter_name>/`):
+
 ```
-adapters/<adapter-id>/
-├── adapter.py              # Core conversion logic (adapter class)
-├── run_adapter.py          # CLI entry point
-├── run_<adapter-id>.yaml   # Job config for oracle and parity experiment runs
-├── README.md               # Benchmark docs, license, parity, citation
-├── parity_experiment.json  # Parity tracking results (JSON array)
-├── adapter_metadata.json   # Adapter metadata (JSON array)
-└── template/               # Task template files
-    ├── task.toml
-    ├── instruction.md
-    ├── environment/
-    │   └── Dockerfile
-    ├── tests/
-    │   └── test.sh
-    └── solution/
-        └── solve.sh
+adapters/<adapter-name>/
+├── .python-version            # Python version (created by uv init)
+├── pyproject.toml             # Python package config
+├── README.md                  # Benchmark docs, license, parity, citation
+├── adapter_metadata.json      # Adapter metadata (JSON array)
+├── parity_experiment.json     # Parity tracking results (JSON array)
+├── run_<adapter-name>.yaml    # Job config for oracle and parity experiment runs
+└── src/
+    └── <adapter_name>/         # adapter-name with dashes → underscores
+        ├── __init__.py
+        ├── adapter.py          # Core conversion logic (adapter class)
+        ├── main.py             # CLI entry point
+        └── task-template/      # Template files copied into each task
+            ├── task.toml
+            ├── instruction.md
+            ├── environment/
+            │   └── Dockerfile
+            ├── tests/
+            │   └── test.sh
+            └── solution/
+                └── solve.sh
 ```
 
 All template files, parity_experiment.json, adapter_metadata.json, and README.md are required. The validator (`harbor adapters validate`) checks for all of them. The YAML job config is not validated but is expected for parity experiments.
@@ -56,7 +63,7 @@ The interactive `AdapterWizard` prompts for:
 - **Source URL** -- Link to original benchmark paper or repo
 - **License** -- Dataset license for the README
 
-If all fields are provided as CLI arguments, the wizard runs non-interactively. The wizard renders Jinja2 templates from `src/harbor/cli/template-adapter/` and places the result under `adapters/<adapter-id>/`.
+If all fields are provided as CLI arguments, the wizard runs non-interactively. The wizard renders Jinja2 templates from `src/harbor/cli/template-adapter/` and places the result under `adapters/<adapter-id>/` using the src layout above.
 
 After scaffolding, validate:
 
@@ -102,8 +109,8 @@ class MyBenchmarkAdapter:
         self.task_dir = Path(task_dir)
         self._config = kwargs
 
-        # Locate template files relative to this file
-        self.template_dir = Path(__file__).parent / "template"
+        # Locate template files relative to this file (inside src/<adapter_name>/)
+        self.template_dir = Path(__file__).parent / "task-template"
         if not self.template_dir.exists():
             raise FileNotFoundError(f"Template directory not found: {self.template_dir}")
 
@@ -191,9 +198,9 @@ When source benchmarks include per-instance files (images, CSVs, databases):
 3. Reference files from `instruction.md` using the container path (e.g., `/app/files/data.csv`)
 4. Mention the attachment in the instruction so the agent knows about it
 
-## Writing run_adapter.py
+## Writing main.py
 
-The CLI entry point follows a standard pattern with helper functions for argument parsing, ID collection, repo cloning, and benchmark processing. The default output directory is `datasets/<adapter-id>`.
+The CLI entry point lives at `src/<adapter_name>/main.py` and follows a standard pattern. Run it via `uv run python -m <adapter_name>.main`. The default output directory is `datasets/<adapter-id>`.
 
 ```python
 #!/usr/bin/env python3
@@ -202,7 +209,6 @@ import sys
 from pathlib import Path
 from loguru import logger
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
 from mybenchmark.adapter import MyBenchmarkAdapter
 
 
@@ -227,6 +233,10 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--limit", type=int,
         help="Limit the number of tasks to generate",
+    )
+    parser.add_argument(
+        "--overwrite", action="store_true",
+        help="Overwrite existing task directories",
     )
     return parser.parse_args()
 
@@ -329,9 +339,13 @@ python3 llm_judge.py  # reads ground_truth.json, writes reward.txt
 
 ## task.toml Configuration
 
+Every generated `task.toml` **must** contain a `name` field under the `[task]` section. Harbor uses this to identify the task when it's added to a dataset; tasks without a `name` cannot be registered.
+
 ```toml
 version = "1.0"
-source = "mybenchmark/instance-42"
+
+[task]
+name = "mybenchmark/task-001"    # required: <org>/<task-id>, must be stable across runs
 
 [metadata]
 author_name = "Your Name"
@@ -358,18 +372,46 @@ allow_internet = true           # network access (default: true)
 # env = { SECRET = "..." }     # env vars for solve.sh (OracleAgent)
 ```
 
+**Task naming requirements:**
+- `name` must be unique within the dataset and **stable across adapter runs** (unstable names churn registry digests on republish)
+- Format: `<org>/<task-id>`, e.g., `mybenchmark/task-001`
+- Sanitize upstream identifiers: lowercase, replace spaces/slashes/special characters with hyphens
+- If the upstream lacks stable identifiers, mint a deterministic scheme (e.g., `{dataset}-1`, `{dataset}-2`) from a reproducible sort
+- `version = "1.0"` is the schema version — leave it alone
+
 ## parity_experiment.json
 
-A JSON **array** of experiment objects tracking how Harbor results compare to the original benchmark. Required fields per entry: `adapter_name`, `agent`, `model`, `date`, `metrics`.
+A JSON **array** of experiment objects tracking how Harbor results compare to the original benchmark. Required fields per entry:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `adapter_name` | string | Yes | Adapter name (e.g., `"mybenchmark"`) |
+| `agent` | string | Yes | Agent with version (e.g., `"codex@1.0"`) |
+| `model` | string | Yes | Full model identifier |
+| `date` | string | Yes | Experiment date |
+| `adapted_benchmark_size` | integer | Yes | Total tasks converted by adapter |
+| `parity_benchmark_size` | integer | Yes | Tasks used for parity |
+| `number_of_runs` | integer | Yes | Runs per side (must match on both sides) |
+| `notes` | string | No | Additional context |
+| `original_parity_repo` | string | Yes | Fork URL for reproducing parity on original |
+| `adapter_pr` | string[] | Yes | All adapter PR links in harbor repo |
+| `dataset_pr` | string[] | Yes | All PR links in harbor-datasets repo |
+| `parity_pr` | string[] | Yes | All PR links to HuggingFace parity dataset |
+| `metrics` | object[] | Yes | Metric comparison objects |
+
+Each `metrics` entry needs `benchmark_name`, `metric`, `original` (mean ± stderr string), `harbor` (mean ± stderr string), `original_runs` (array of per-run scores), and `harbor_runs` (array of per-run scores).
 
 ```json
 [
   {
     "adapter_name": "mybenchmark",
-    "agent": "codex@0.77.0",
-    "model": "openai/gpt-4o-2025-03-01",
+    "agent": "codex@1.0",
+    "model": "openai/gpt-5-2025-06-01",
     "date": "2026-01-15",
-    "notes": "50 tasks; averaged over 3 trials",
+    "adapted_benchmark_size": 500,
+    "parity_benchmark_size": 50,
+    "number_of_runs": 3,
+    "notes": "50-task sample; averaged over 3 runs",
     "original_parity_repo": "https://github.com/example/mybenchmark/tree/harbor-parity",
     "adapter_pr": [
       "https://github.com/harbor-framework/harbor/pull/123"
@@ -384,23 +426,21 @@ A JSON **array** of experiment objects tracking how Harbor results compare to th
       {
         "benchmark_name": "MyBenchmark",
         "metric": "Accuracy",
-        "original": "0.72 +/- 0.03",
-        "harbor": "0.71 +/- 0.02",
-        "original_trials": [0.73, 0.69, 0.74],
-        "harbor_trials": [0.72, 0.70, 0.71]
+        "original": "72.0 +/- 1.5",
+        "harbor": "71.3 +/- 1.2",
+        "original_runs": [73.0, 69.0, 74.0],
+        "harbor_runs": [72.0, 70.0, 71.9]
       }
     ]
   }
 ]
 ```
 
-The `adapter_pr`, `dataset_pr`, and `parity_pr` fields in `parity_experiment.json` must be arrays of URLs when present. Each metric object needs `benchmark_name`, `metric`, and at least one of `original`, `tb_adapter`, or `harbor`.
-
-The `harbor_adapter` entry must include `parity_matching_agents` (array of `"agent@version+model"` strings). In the harbor-datasets `registry.json`, use `"version": "parity"` to enable `harbor jobs start -d mybenchmark@parity`.
+**Important:** the per-run arrays are named `original_runs` and `harbor_runs` (not `_trials`). The validator enforces `*_runs` naming.
 
 ## adapter_metadata.json
 
-A JSON **array** describing the adapter and its relationship to the original benchmark. Required fields per entry: `adapter_name`, `adapter_builders`, `original_benchmark`, `harbor_adapter`.
+A JSON **array** describing the adapter and its relationship to the original benchmark.
 
 ```json
 [
@@ -426,8 +466,10 @@ A JSON **array** describing the adapter and its relationship to the original ben
         "parity_benchmark_size": 50,
         "parity_sampling_rate": 0.1,
         "registry_benchmark_size": 500,
-        "parity_costs": "150",
-        "parity_matching_agents": ["codex@0.77.0+openai/gpt-4o-2025-03-01"],
+        "added_agents": ["None"],
+        "parity_matching_agents": ["codex@1.0+openai/gpt-5-2025-06-01"],
+        "parity_unmatching_agents": ["None"],
+        "parity_costs": "$150",
         "notes": "Full benchmark adapted. Parity on 10% sample."
       }
     ]
@@ -435,24 +477,28 @@ A JSON **array** describing the adapter and its relationship to the original ben
 ]
 ```
 
+**New required fields in `harbor_adapter`:**
+- `added_agents`: custom agents added for this adapter (`["None"]` if none)
+- `parity_unmatching_agents`: agents that were tested but did not achieve parity (`["None"]` if all matched)
+
 ## Validation
 
 The `harbor adapters validate` command (backed by `scripts/validate_adapter.py`) checks:
 
-1. **Required files exist**: `adapter.py`, `run_adapter.py`, `README.md`, `parity_experiment.json`, `adapter_metadata.json`, `template/` directory
-2. **Template structure**: `template/task.toml`, `template/instruction.md`, `template/environment/Dockerfile`, `template/tests/test.sh`, `template/solution/solve.sh`
-3. **test.sh writes reward**: Template `tests/test.sh` must contain a write to `/logs/verifier/reward.txt`
-4. **parity_experiment.json schema**: Valid JSON array with required fields (`adapter_name`, `agent`, `model`, `date`, `metrics`)
-5. **adapter_metadata.json schema**: Valid JSON array with required fields (`adapter_name`, `adapter_builders`, `original_benchmark`, `harbor_adapter`)
-6. **README.md compliance**: Checks for "Overview", "Parity", "Citation" sections; warns about unreplaced template placeholders like `{{ADAPTER_ID}}`
-7. **Cross-validation**: Compares `adapter_name` between metadata and parity files
+1. **Required files exist**: `adapter_metadata.json`, `parity_experiment.json`, `README.md`, `run_<adapter-name>.yaml`
+2. **src layout**: `src/<adapter_name>/adapter.py`, `src/<adapter_name>/main.py`, `src/<adapter_name>/task-template/`
+3. **Template structure**: `task-template/task.toml`, `task-template/instruction.md`, `task-template/environment/Dockerfile`, `task-template/tests/test.sh`, `task-template/solution/solve.sh`
+4. **test.sh writes reward**: Template `tests/test.sh` must contain a write to `/logs/verifier/reward.txt`
+5. **parity_experiment.json schema**: Valid JSON array with required fields
+6. **adapter_metadata.json schema**: Valid JSON array with required fields
+7. **README.md compliance**: Checks for "Overview", "Parity", "Citation" sections
 
 ```bash
 # Validate adapter structure
 harbor adapters validate adapters/mybenchmark
 
 # Generate a single task to test
-python3 adapters/mybenchmark/run_adapter.py \
+uv run python -m mybenchmark.main \
   --output-dir datasets/mybenchmark \
   --task-ids instance-001
 
@@ -466,29 +512,45 @@ harbor trials start -p datasets/mybenchmark/mybenchmark-instance-001 --agent ora
 harbor jobs start -p datasets/mybenchmark --agent oracle
 ```
 
+## GPU Tasks
+
+For adapters with GPU tasks, add a `docker-compose.yaml` in the task's `environment/` directory with nvidia device reservations. For cloud/Modal runs, also set `gpus` in `task.toml`. See the [featurebench adapter](https://github.com/harbor-framework/harbor/tree/main/adapters/featurebench) for a comprehensive example — it handles 44 GPU tasks across multiple repos with separate `_docker_cpu.yaml`, `_docker_gpu.yaml`, and `_modal.yaml` config files.
+
+## Reference Adapters by Scenario
+
+| Scenario | Example adapter | When to use |
+|----------|----------------|-------------|
+| Compatible agent already exists | `adapters/adebench/` | Upstream already supports Claude-Code / Codex / OpenHands / Gemini-CLI |
+| Fork upstream + add LLM agent | `adapters/evoeval/` | LLM-based benchmark with no Harbor-compatible agent |
+| Custom agent, separate dataset | `adapters/bixbench/`, `adapters/financeagent/` | Custom interaction semantics; financeagent also demos LLM-as-a-Judge |
+| Custom agent in-place | `adapters/medagentbench/` | Custom HTTPAgent, no separate dataset |
+| Multi-agent workflow | `adapters/cooperbench/` | Multiple agents coordinate via messaging / sidecars |
+| GPU tasks | `adapters/featurebench/` | Comprehensive Docker + Modal GPU example |
+
 ## Post-Implementation Workflow
 
 After generating valid tasks, complete these steps before submitting:
 
-1. **Oracle Verification** — Run oracle agent across all tasks; must reach 100% pass rate.
-2. **Parity Planning** — Select a representative sample (typically 10%) for parity runs.
-3. **Parity Experiments** — Run target agent+model against both original harness and Harbor, using `run_<adapter-id>.yaml`. Record all trial scores.
-4. **Results Documentation** — Fill `parity_experiment.json`; upload results to the HuggingFace parity dataset.
-5. **Dataset Registration** — Fork `harbor-datasets`, place tasks under `datasets/<adapter-id>/`, open a PR with `"version": "parity"` in `registry.json`.
-6. **Adapter PR** — Open a PR to the Harbor repo with adapter code.
-7. **README Thoroughness** — Ensure README covers Overview, Parity results, License, and Citation.
+1. **Oracle Verification** — Run oracle agent across all tasks; must reach 100% pass rate. Create a WIP PR with a screenshot of results.
+2. **Parity Planning** — Contact the team before running parity. They determine agents, models, number of runs, and API key provisioning.
+3. **Parity Experiments** — Run target agent+model against both original harness and Harbor, using `run_<adapter-id>.yaml`. Record all run scores.
+4. **Results Documentation** — Fill `parity_experiment.json`; upload results to the HuggingFace parity dataset via the `upload-parity-experiments` skill.
+5. **Dataset Registration** — Fork `harbor-datasets`, place tasks under `datasets/<adapter-id>/`, run `harbor init` to create `dataset.toml`, open a PR.
+6. **Adapter PR** — Change title from `[WIP]` to `[Ready for Review] Adapter: {adapter_name}`, request review from `@Slimshilin`.
+7. **README Thoroughness** — Ensure README covers Overview, Parity results, License, and Citation. The README is parsed by automation — do not add, rename, reorder, or remove template sections.
 
 See [references/adapter-anatomy.md](references/adapter-anatomy.md#6-post-implementation-workflow) for commands and YAML job config format.
 
 ## Gotchas
 
 - **Missing reward.txt write**: The most common failure. test.sh must always write to `/logs/verifier/reward.txt`, even on error paths.
-- **Wrong parity_experiment.json format**: It is a JSON array `[{...}]`, not a plain object `{...}`. Using the singular filename `parity_experiment.json`, not plural.
-- **Forgetting adapter_metadata.json**: This file is required and checked by the validator. Include builder contact info (email).
+- **Wrong parity_experiment.json format**: It is a JSON array `[{...}]`, not a plain object `{...}`. Using the singular filename `parity_experiment.json`, not plural. Per-run score arrays are named `original_runs` / `harbor_runs` (not `_trials`).
+- **Forgetting adapter_metadata.json**: This file is required and checked by the validator. Include `added_agents` and `parity_unmatching_agents` fields.
 - **Baking test dependencies into Dockerfile**: Test-only dependencies (pytest, evaluation scripts) should be installed inside `test.sh`, not in the Docker image. The `tests/` directory is uploaded separately at verification time.
 - **Including tests/ or solution/ in Docker image**: These directories should not be COPYed in the Dockerfile. They are injected by Harbor at runtime.
-- **Unreplaced template placeholders**: After scaffolding with `harbor adapters init`, replace all `{{ADAPTER_ID}}`, `{{BENCHMARK_NAME}}`, etc. in README.md and other files.
-- **Using /app vs /workspace inconsistently**: Pick one working directory and be consistent between instruction.md, test.sh, and Dockerfile WORKDIR. Some adapters use `/app`, others use `/workspace`.
+- **Missing `[task]` section in task.toml**: Every generated task.toml must include a `[task]` block with a `name` field. Without it, tasks cannot be registered. The `name` field does not belong at the top level — it must be under `[task]`.
+- **Unstable task names**: Task names must be deterministic across adapter runs. If upstream IDs change or aren't stable, mint a reproducible scheme from a consistent sort.
+- **Using /app vs /workspace inconsistently**: Pick one working directory and be consistent between instruction.md, test.sh, and Dockerfile WORKDIR.
 - **Not escaping shell-unsafe characters**: Answers containing single quotes, backticks, or dollar signs can break test.sh or solve.sh. Escape them when embedding in shell scripts.
 - **Missing `mkdir -p /logs/verifier`**: Some base images may not have this directory. Create it in test.sh before writing reward.txt.
 

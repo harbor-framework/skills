@@ -38,7 +38,7 @@ my-task/
 │   └── test_*.py          # Pytest files (optional)
 ├── solution/
 │   └── solve.sh           # Reference solution (optional)
-└── README.md              # Human documentation (optional)
+└── README.md              # Human documentation (fill in before publishing)
 ```
 
 **Required files:** `task.toml`, `instruction.md`, `environment/` (with Dockerfile or docker-compose.yaml), `tests/test.sh`.
@@ -106,6 +106,11 @@ The task.toml file controls timeouts, resources, metadata, and MCP server config
 ```toml
 version = "1.0"
 
+[task]
+name = "<org>/<task-name>"           # required for registry
+description = "One-line description"
+keywords = ["python", "debugging", "pytest"]  # always populate — 3–8 tokens
+
 [metadata]
 difficulty = "easy"
 category = "programming"
@@ -117,9 +122,12 @@ timeout_sec = 300.0
 timeout_sec = 120.0
 ```
 
+**Always populate `keywords`.** Pick 3–8 lowercase tokens covering the domain (language/framework/benchmark family), the verifier style (`rewardkit`, `judge-grading`, `pytest`), and any notable hardware (`gpu`). Keywords are surfaced in `harbor datasets list` and registry search — leaving them empty makes the task invisible to search.
+
 **Full configuration — see [references/task-toml-reference.md](references/task-toml-reference.md) for every field, type, and default.**
 
 Key sections:
+- `[task]` — `name` (string, required for registry), `description` (string), `keywords` (string array, always populate)
 - `[metadata]` — free-form dict; conventional keys: difficulty, category, tags, author info, time estimates
 - `[agent]` — `timeout_sec` (float, default 600.0): wall-clock seconds for the agent
 - `[verifier]` — `timeout_sec` (float, default 600.0) and `env` (dict): timeout and environment variables for test.sh
@@ -284,7 +292,7 @@ TOTAL=3
 echo "scale=2; $SCORE / $TOTAL" | bc > /logs/verifier/reward.txt
 
 # Or use reward.json for named sub-scores (pick one approach, not both)
-# echo "{\"reward\": $(echo "scale=2; $SCORE/$TOTAL" | bc), \"completeness\": $SCORE}" \
+# echo "{\"reward\": $(echo \"scale=2; $SCORE/$TOTAL\" | bc), \"completeness\": $SCORE}" \
 #   > /logs/verifier/reward.json
 ```
 
@@ -346,6 +354,18 @@ harbor tasks debug <task-id> -m sonnet --tasks-dir ./tasks
 
 After running a job with real agents, use this to diagnose whether repeated failures are caused by an unclear or insufficient instruction.
 
+## Step 9: Update README.md
+
+`harbor tasks init` leaves `README.md` as a stub. Before publishing or sharing the task, populate it so future humans (and agents) can understand the task without reading every file. Include:
+
+- **What the agent does** — one paragraph, link to `instruction.md`.
+- **Environment** — base image, key installed packages, cached data, hardware (GPU/CPU/RAM), agent timeout.
+- **Verifier** — for Reward Kit tasks, a table of reward dimensions with type (programmatic / LLM judge / agent judge) and what each measures; how they're aggregated.
+- **Layout** — a tree of the task directory with one-line annotations.
+- **Running** — the concrete `harbor run` commands (Oracle + real agent), with the right provider flag if the task needs a GPU.
+
+Treat this as docs, not marketing — the reader wants to know *what they'd need to change* to modify the task.
+
 ## Quality Checklist
 
 Harbor's `QualityChecker` uses an 11-point rubric (defined in `default_rubric.toml`). Each criterion is evaluated by an LLM judge as pass/fail/not_applicable. Verify these before publishing:
@@ -376,7 +396,7 @@ Run the checker: `harbor tasks check ./my-task`
 
 **GPU tasks:** For ML/CUDA workloads. Set `gpus` and `gpu_types` in `[environment]`. Only Modal and GKE backends support GPUs — `DockerEnvironment` does not. Use `--environment-type modal` when running.
 
-**LLM-as-judge tasks:** Open-ended outputs evaluated by another LLM. Custom logic in test.sh calls an LLM API and writes a normalized score to reward.txt.
+**LLM-as-judge tasks:** Open-ended outputs evaluated by another LLM. Custom logic in test.sh calls an LLM API and writes a normalized score to reward.txt. Add the judge API key to `[verifier.env]` in task.toml.
 
 ## Common Pitfalls
 
@@ -393,6 +413,9 @@ These are the mistakes that trip up task authors most often:
 | Using `rewards.json` | Harbor looks for `reward.json` (singular) | Use `reward.txt` or `reward.json` |
 | Missing output file path in instruction | Agent doesn't know where to write results | Explicitly state every file path the tests will check |
 | Requesting GPUs on Docker | Runtime error: environment doesn't support GPUs | Use `--environment-type modal` or `gke` for GPU tasks |
+| Leaving `keywords = []` in task.toml | Task is invisible to registry search | Always populate with 3–8 lowercase tokens |
+| Missing `[task]` section in task.toml | `name` field is silently ignored (not top-level) | Put `name`, `description`, `keywords` under `[task]`, not at TOML top level |
+| Leaving README.md as a stub | Teammates can't understand the task at a glance | Fill in before publishing (see Step 9 above) |
 
 ## Complete Example Walkthroughs
 
