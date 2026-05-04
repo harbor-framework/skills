@@ -414,6 +414,7 @@ Key flags: `--tasks-dir / -t` (default: `tasks`), `--registry / -r` (required), 
 | Cursor CLI | `cursor-cli` | |
 | Gemini CLI | `gemini-cli` | Needs `GOOGLE_API_KEY` or `GEMINI_API_KEY` |
 | Goose | `goose` | Model format: `provider/model_name` |
+| Kimi CLI | `kimi-cli` | Model format: `provider/model_name`; providers: `moonshot`, `kimi`, `openai`, `anthropic`, `gemini`, `google`, `openrouter` |
 | Mini SWE-agent | `mini-swe-agent` | |
 | SWE-agent | `swe-agent` | |
 | OpenCode | `opencode` | |
@@ -483,7 +484,7 @@ harbor jobs summarize ./jobs/my-job
 
 **Docker must be running.** Harbor uses Docker for sandboxed environments. Network exhaustion from many concurrent trials can cause failures -- `harbor cache clean` helps.
 
-**Model name format varies by agent.** Claude Code uses `anthropic/claude-sonnet-4-1`, Cline CLI uses `provider:model-id` (e.g., `openrouter:anthropic/claude-opus-4.5`), Goose uses `provider/model_name`. A `ValueError` about model format usually means the wrong format for that agent.
+**Model name format varies by agent.** Claude Code uses `anthropic/claude-sonnet-4-1`, Cline CLI uses `provider:model-id` (e.g., `openrouter:anthropic/claude-opus-4.5`), Goose and Kimi CLI use `provider/model_name` (e.g., `openrouter/moonshotai/kimi-k2.6` for Kimi CLI via OpenRouter). A `ValueError` about model format usually means the wrong format for that agent.
 
 **`--env` vs `--environment-type`:** `harbor run` uses `--env` / `-e`. `harbor trials start` uses `--environment-type` / `-e`. Same short flag, different long name.
 
