@@ -411,7 +411,7 @@ Key flags: `--tasks-dir / -t` (default: `tasks`), `--registry / -r` (required), 
 | Aider | `aider` | |
 | Codex | `codex` | |
 | Cline CLI | `cline-cli` | Model format: `provider:model-id` |
-| Cursor CLI | `cursor-cli` | |
+| Cursor CLI | `cursor-cli` | Needs `CURSOR_API_KEY`. Supports `--ak mode=plan` or `--ak mode=ask` |
 | Gemini CLI | `gemini-cli` | Needs `GOOGLE_API_KEY` or `GEMINI_API_KEY` |
 | Goose | `goose` | Model format: `provider/model_name` |
 | Mini SWE-agent | `mini-swe-agent` | |
@@ -479,7 +479,7 @@ harbor jobs summarize ./jobs/my-job
 
 ## Common Gotchas
 
-**API keys:** Most agents need keys passed via `--ae`. Claude Code needs `ANTHROPIC_API_KEY`, OpenHands needs `LLM_API_KEY`, Goose needs provider-specific keys. If the agent fails immediately, check the key.
+**API keys:** Most agents need keys passed via `--ae`. Claude Code needs `ANTHROPIC_API_KEY`, Cursor CLI needs `CURSOR_API_KEY`, OpenHands needs `LLM_API_KEY`, Goose needs provider-specific keys. If the agent fails immediately, check the key.
 
 **Docker must be running.** Harbor uses Docker for sandboxed environments. Network exhaustion from many concurrent trials can cause failures -- `harbor cache clean` helps.
 
