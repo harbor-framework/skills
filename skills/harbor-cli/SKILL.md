@@ -411,12 +411,12 @@ Key flags: `--tasks-dir / -t` (default: `tasks`), `--registry / -r` (required), 
 | Aider | `aider` | |
 | Codex | `codex` | |
 | Cline CLI | `cline-cli` | Model format: `provider:model-id` |
-| Cursor CLI | `cursor-cli` | |
+| Cursor CLI | `cursor-cli` | Needs `CURSOR_API_KEY`. Model format: `provider/model-id` (provider prefix stripped before passing to cursor-agent) |
 | Gemini CLI | `gemini-cli` | Needs `GOOGLE_API_KEY` or `GEMINI_API_KEY` |
 | Goose | `goose` | Model format: `provider/model_name` |
 | Mini SWE-agent | `mini-swe-agent` | |
 | SWE-agent | `swe-agent` | |
-| OpenCode | `opencode` | |
+| OpenCode | `opencode` | Model format: `provider/model_id`. Any provider supported (anthropic, openai, google, openrouter, etc.) |
 | OpenHands | `openhands` | Needs `LLM_API_KEY` and `LLM_MODEL` |
 | OpenHands SDK | `openhands-sdk` | |
 | Qwen Coder | `qwen-coder` | |
@@ -434,8 +434,11 @@ Key flags: `--tasks-dir / -t` (default: `tasks`), `--registry / -r` (required), 
 | GKE | `gke` | Google Kubernetes Engine |
 | Modal | `modal` | Serverless with GPU support |
 | Runloop | `runloop` | Runloop cloud environments |
+| Tensorlake | `tensorlake` | Tensorlake cloud sandboxes |
 
 Note: `harbor run` uses `--env` / `-e`. `harbor trials start` uses `--environment-type` / `-e`.
+
+**Daytona-specific `--ek` options:** `connection_pool_maxsize=N` sets the HTTP connection pool size forwarded to `DaytonaConfig` when the shared client is built (first value set in a job wins; use `=null` for unlimited connections).
 
 ## Common Workflows
 
@@ -479,11 +482,11 @@ harbor jobs summarize ./jobs/my-job
 
 ## Common Gotchas
 
-**API keys:** Most agents need keys passed via `--ae`. Claude Code needs `ANTHROPIC_API_KEY`, OpenHands needs `LLM_API_KEY`, Goose needs provider-specific keys. If the agent fails immediately, check the key.
+**API keys:** Most agents need keys passed via `--ae`. Claude Code needs `ANTHROPIC_API_KEY`, Cursor CLI needs `CURSOR_API_KEY`, OpenHands needs `LLM_API_KEY`, Goose needs provider-specific keys. If the agent fails immediately, check the key.
 
 **Docker must be running.** Harbor uses Docker for sandboxed environments. Network exhaustion from many concurrent trials can cause failures -- `harbor cache clean` helps.
 
-**Model name format varies by agent.** Claude Code uses `anthropic/claude-sonnet-4-1`, Cline CLI uses `provider:model-id` (e.g., `openrouter:anthropic/claude-opus-4.5`), Goose uses `provider/model_name`. A `ValueError` about model format usually means the wrong format for that agent.
+**Model name format varies by agent.** Claude Code uses `anthropic/claude-sonnet-4-1`, Cline CLI uses `provider:model-id` (e.g., `openrouter:anthropic/claude-opus-4.5`), Goose uses `provider/model_name`, Cursor CLI uses `provider/model-id` (provider prefix is stripped before passing to cursor-agent), OpenCode uses `provider/model_id`. A `ValueError` about model format usually means the wrong format for that agent.
 
 **`--env` vs `--environment-type`:** `harbor run` uses `--env` / `-e`. `harbor trials start` uses `--environment-type` / `-e`. Same short flag, different long name.
 
