@@ -420,6 +420,7 @@ Key flags: `--tasks-dir / -t` (default: `tasks`), `--registry / -r` (required), 
 | OpenHands | `openhands` | Needs `LLM_API_KEY` and `LLM_MODEL` |
 | OpenHands SDK | `openhands-sdk` | |
 | Qwen Coder | `qwen-coder` | |
+| Devin | `devin` | Needs `WINDSURF_API_KEY` |
 | Terminus | `terminus` | Harbor's built-in agent |
 | Terminus 1 | `terminus-1` | |
 | Terminus 2 | `terminus-2` | |
@@ -479,11 +480,11 @@ harbor jobs summarize ./jobs/my-job
 
 ## Common Gotchas
 
-**API keys:** Most agents need keys passed via `--ae`. Claude Code needs `ANTHROPIC_API_KEY`, OpenHands needs `LLM_API_KEY`, Goose needs provider-specific keys. If the agent fails immediately, check the key.
+**API keys:** Most agents need keys passed via `--ae`. Claude Code needs `ANTHROPIC_API_KEY`, OpenHands needs `LLM_API_KEY`, Goose needs provider-specific keys, Devin needs `WINDSURF_API_KEY`. If the agent fails immediately, check the key.
 
 **Docker must be running.** Harbor uses Docker for sandboxed environments. Network exhaustion from many concurrent trials can cause failures -- `harbor cache clean` helps.
 
-**Model name format varies by agent.** Claude Code uses `anthropic/claude-sonnet-4-1`, Cline CLI uses `provider:model-id` (e.g., `openrouter:anthropic/claude-opus-4.5`), Goose uses `provider/model_name`. A `ValueError` about model format usually means the wrong format for that agent.
+**Model name format varies by agent.** Claude Code uses `anthropic/claude-sonnet-4-1`, Cline CLI uses `provider:model-id` (e.g., `openrouter:anthropic/claude-opus-4.5`), Goose uses `provider/model_name`, Devin strips the provider prefix (e.g., pass `anthropic/claude-opus-4.7` and it uses `claude-opus-4.7`). A `ValueError` about model format usually means the wrong format for that agent.
 
 **`--env` vs `--environment-type`:** `harbor run` uses `--env` / `-e`. `harbor trials start` uses `--environment-type` / `-e`. Same short flag, different long name.
 
