@@ -491,4 +491,4 @@ harbor jobs summarize ./jobs/my-job
 
 **`--no-cleanup` for debugging.** Pass this to `harbor trials start` to keep the container running after a failed trial so you can inspect it.
 
-**Retry defaults skip common errors.** `--retry-exclude` defaults to `AgentTimeoutError`, `VerifierTimeoutError`, `RewardFileNotFoundError`, `RewardFileEmptyError`, `VerifierOutputParseError`. These usually indicate task bugs, not transient failures.
+**Retry defaults skip common errors.** `--retry-exclude` defaults to `AgentTimeoutError`, `VerifierTimeoutError`, `RewardFileNotFoundError`, `RewardFileEmptyError`, `VerifierOutputParseError`. These usually indicate task bugs, not transient failures. When passed on the command line, `--retry-exclude` completely replaces any values from a config file — it does not merge.
