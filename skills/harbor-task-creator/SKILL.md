@@ -63,7 +63,7 @@ Understanding the runtime flow prevents most common authoring mistakes:
 3. **Agent runs** — The agent connects to the container, reads instruction.md (provided separately, not in the container), and works in the environment.
 4. **Upload tests** — After the agent finishes, Harbor uploads `tests/` to `/tests/` inside the container using `docker compose cp`.
 5. **Execute test.sh** — Harbor runs `chmod +x /tests/test.sh` then executes it. Working directory is `/tests/`. Environment variables from `[verifier].env` in task.toml are injected.
-6. **Parse reward** — Harbor reads `/logs/verifier/reward.txt` (priority) or `/logs/verifier/reward.json`. If neither exists, the trial errors with `RewardFileNotFoundError`.
+6. **Parse reward** — Harbor reads `/logs/verifier/reward.json` (priority) or `/logs/verifier/reward.txt`. If neither exists, the trial errors with `RewardFileNotFoundError`.
 
 This means: the agent never sees `tests/` or `solution/`. Tests run after the agent is done. Reward files must always be written.
 
@@ -227,7 +227,7 @@ The test script runs inside the container AFTER the agent finishes. It determine
 **Reward contract:**
 - Write a float to `/logs/verifier/reward.txt` (e.g., `1` for pass, `0` for fail, `0.5` for partial)
 - Alternatively, write JSON to `/logs/verifier/reward.json` (e.g., `{"reward": 1.0}`)
-- `reward.txt` takes priority — if both exist, Harbor reads `reward.txt` and ignores `reward.json`
+- `reward.json` takes priority — if both exist, Harbor reads `reward.json` and ignores `reward.txt`
 - `reward.json` supports multiple named rewards (e.g., `{"reward": 1.0, "quality": 0.8, "style": 0.6}`)
 - MUST write the reward file in ALL code paths — if missing, the trial fails with `RewardFileNotFoundError`; if empty, `RewardFileEmptyError`
 
@@ -284,7 +284,7 @@ TOTAL=3
 echo "scale=2; $SCORE / $TOTAL" | bc > /logs/verifier/reward.txt
 
 # Or use reward.json for named sub-scores (pick one approach, not both)
-# echo "{\"reward\": $(echo "scale=2; $SCORE/$TOTAL" | bc), \"completeness\": $SCORE}" \
+# echo "{\"reward\": $(echo \"scale=2; $SCORE/$TOTAL\" | bc), \"completeness\": $SCORE}" \
 #   > /logs/verifier/reward.json
 ```
 

@@ -94,7 +94,7 @@ Detailed flags for every Harbor CLI command. This file is the authoritative refe
 | `--orchestrator` | | str | `local` | Orchestrator type: `local` or `queue` |
 | `--orchestrator-kwarg` | `--ok` | str list | | Orchestrator kwarg as `key=value`. Can repeat |
 
-Default `--retry-exclude`: `AgentTimeoutError`, `VerifierTimeoutError`, `RewardFileNotFoundError`, `RewardFileEmptyError`, `VerifierOutputParseError`.
+Default `--retry-exclude`: `AgentTimeoutError`, `VerifierTimeoutError`, `RewardFileNotFoundError`, `RewardFileEmptyError`, `VerifierOutputParseError`. Providing this flag on the command line replaces (does not merge with) any `retry.exclude_exceptions` set in a config file.
 
 ### Timeout multipliers
 
