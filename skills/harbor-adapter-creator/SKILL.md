@@ -282,7 +282,7 @@ This is the most common source of adapter validation failures. The verifier uplo
 
 **test.sh MUST write a reward value to `/logs/verifier/reward.txt`** -- a single float (e.g., `0` or `1` or `0.75`). If this file is missing, the verifier raises `RewardFileNotFoundError` and the trial fails.
 
-Optionally, test.sh can also write `/logs/verifier/reward.json` for structured reward data (e.g., `{"reward": 1.0, "quality": 0.8}`). The verifier checks `reward.txt` first, then falls back to `reward.json`.
+Optionally, test.sh can also write `/logs/verifier/reward.json` for structured reward data (e.g., `{"reward": 1.0, "quality": 0.8}`). The verifier checks `reward.json` first, then falls back to `reward.txt`.
 
 ### Verification Patterns
 

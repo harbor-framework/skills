@@ -492,3 +492,5 @@ harbor jobs summarize ./jobs/my-job
 **`--no-cleanup` for debugging.** Pass this to `harbor trials start` to keep the container running after a failed trial so you can inspect it.
 
 **Retry defaults skip common errors.** `--retry-exclude` defaults to `AgentTimeoutError`, `VerifierTimeoutError`, `RewardFileNotFoundError`, `RewardFileEmptyError`, `VerifierOutputParseError`. These usually indicate task bugs, not transient failures.
+
+**Daytona requires credentials.** Use `DAYTONA_API_KEY`, or both `DAYTONA_JWT_TOKEN` and `DAYTONA_ORGANIZATION_ID` (JWT auth). If neither is set, `harbor run -e daytona` fails at preflight.
