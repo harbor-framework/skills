@@ -188,6 +188,8 @@ Place any files referenced by `COPY` in the `environment/` directory alongside t
 
 For tasks requiring multiple services (databases, APIs, etc.), add `docker-compose.yaml` to the `environment/` directory. When Harbor detects this file, it switches to "compose mode" and uses `docker compose` to orchestrate all services.
 
+**Cloud provider support:** Multi-container compose mode works with local Docker, **Daytona**, and **Islo**. Modal, E2B, Runloop, and Tensorlake do not support docker-compose — use single-container tasks with those providers, or switch to local Docker, Daytona, or Islo.
+
 **Critical rule: the primary service must be named `main`.**
 
 Harbor hardcodes the service name `main` for all `exec`, `upload`, and `download` operations. If your primary service has a different name, Harbor cannot interact with it. This is not configurable.
@@ -393,6 +395,7 @@ These are the mistakes that trip up task authors most often:
 | Using `rewards.json` | Harbor looks for `reward.json` (singular) | Use `reward.txt` or `reward.json` |
 | Missing output file path in instruction | Agent doesn't know where to write results | Explicitly state every file path the tests will check |
 | Requesting GPUs on Docker | Runtime error: environment doesn't support GPUs | Use `--environment-type modal` or `gke` for GPU tasks |
+| Using docker-compose with unsupported cloud provider | Compose tasks fail on Modal/E2B/Runloop/Tensorlake | Only local Docker, Daytona, and Islo support multi-container; switch providers or use a single-container design |
 
 ## Complete Example Walkthroughs
 

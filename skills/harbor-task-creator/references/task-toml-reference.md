@@ -74,7 +74,7 @@ Parsed into `EnvironmentConfig`. Specifies resource requirements and configurati
 ### GPU Notes
 
 - Only `ModalEnvironment` and `GKEEnvironment` support GPUs (`supports_gpus = True`).
-- `DockerEnvironment`, `DaytonaEnvironment`, `E2BEnvironment`, and `RunloopEnvironment` do NOT support GPUs.
+- `DockerEnvironment`, `DaytonaEnvironment`, `IsloEnvironment`, `E2BEnvironment`, and `RunloopEnvironment` do NOT support GPUs.
 - If `gpus > 0` and the environment doesn't support GPUs, Harbor raises a `RuntimeError` at startup.
 - Modal uses only the first entry from `gpu_types` (it doesn't support multiple GPU type fallbacks). The config is passed as `"{gpu_type}:{count}"` (e.g., `"A100:1"`).
 - CLI override: `--override-gpus 1` at trial/job time.
@@ -187,16 +187,17 @@ env = { DEBUG = "0" }
 
 Harbor supports multiple environment backends, selected at runtime via `--environment-type`:
 
-| Backend | Class | GPUs | Disable Internet | Description |
-|---------|-------|------|-----------------|-------------|
-| `docker` | `DockerEnvironment` | No | Yes | Local Docker (default) |
-| `daytona` | `DaytonaEnvironment` | No | Yes | Cloud sandbox (DinD for multi-container) |
-| `gke` | `GKEEnvironment` | Yes | — | Kubernetes |
-| `modal` | `ModalEnvironment` | Yes | Yes | Serverless with GPU support |
-| `e2b` | `E2BEnvironment` | No | — | E2B cloud sandbox |
-| `runloop` | `RunloopEnvironment` | No | — | Runloop sandbox |
+| Backend | Class | GPUs | Disable Internet | Multi-Container | Description |
+|---------|-------|------|-----------------|-----------------|-------------|
+| `docker` | `DockerEnvironment` | No | Yes | Yes | Local Docker (default) |
+| `daytona` | `DaytonaEnvironment` | No | Yes | Yes | Cloud sandbox (DinD) |
+| `islo` | `IsloEnvironment` | No | Yes | Yes | ISLO microVM cloud sandbox |
+| `gke` | `GKEEnvironment` | Yes | — | No | Kubernetes |
+| `modal` | `ModalEnvironment` | Yes | Yes | No | Serverless with GPU support |
+| `e2b` | `E2BEnvironment` | No | — | No | E2B cloud sandbox |
+| `runloop` | `RunloopEnvironment` | No | — | No | Runloop sandbox |
 
-Select with `harbor trials start --environment-type modal` (or `docker`, `daytona`, `gke`, etc.).
+Select with `harbor trials start --environment-type modal` (or `docker`, `daytona`, `islo`, `gke`, etc.).
 
 ## Reward File Reference
 

@@ -429,7 +429,8 @@ Key flags: `--tasks-dir / -t` (default: `tasks`), `--registry / -r` (required), 
 | Backend | CLI value | Description |
 |---------|-----------|-------------|
 | Docker | `docker` | Default. Local containers |
-| Daytona | `daytona` | Cloud sandbox with Docker-in-Docker |
+| Daytona | `daytona` | Cloud sandbox with Docker-in-Docker; supports multi-container |
+| Islo | `islo` | ISLO microVM cloud sandbox; supports multi-container |
 | E2B | `e2b` | E2B cloud sandboxes |
 | GKE | `gke` | Google Kubernetes Engine |
 | Modal | `modal` | Serverless with GPU support |
