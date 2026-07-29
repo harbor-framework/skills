@@ -9,9 +9,12 @@
 
 | Skill | Description |
 |-------|-------------|
-| [harbor-task-creator](skills/harbor-task-creator/) | Create Harbor tasks |
-| [harbor-adapter-creator](skills/harbor-adapter-creator/) | Build adapters that convert external benchmarks into Harbor tasks |
-| [harbor-cli](skills/harbor-cli/) | Complete reference for Harbor CLI commands and flags |
+| [create-adapter](skills/create-adapter/) | Scaffold and implement Harbor benchmark adapters |
+| [create-task](skills/create-task/) | Create Harbor tasks, environments, solutions, and verifiers |
+| [harbor-exec](skills/harbor-exec/) | Compile inputs into tasks and run Harbor Exec workflows |
+| [publish](skills/publish/) | Publish Harbor tasks and datasets to the registry |
+| [rewardkit](skills/rewardkit/) | Build Harbor task verifiers with Reward Kit |
+| [upload-parity-experiments](skills/upload-parity-experiments/) | Upload Harbor parity experiment results to Hugging Face |
 
 ## Usage
 
