@@ -12,6 +12,7 @@
 | [harbor-task-creator](skills/harbor-task-creator/) | Create Harbor tasks |
 | [harbor-adapter-creator](skills/harbor-adapter-creator/) | Build adapters that convert external benchmarks into Harbor tasks |
 | [harbor-cli](skills/harbor-cli/) | Complete reference for Harbor CLI commands and flags |
+| [xquik-harbor-research](skills/xquik-harbor-research/) | Build reproducible Harbor evaluations from Xquik research fixtures |
 
 ## Usage
 
@@ -20,7 +21,7 @@ To add the Harbor skills, just run the following commands.
 **Claude Code**
 ```
 /plugin marketplace add harbor-framework/skills
-/plugin install harbor-skills
+/plugin install harbor-skills@harbor-skills
 ```
 
 **Codex**
